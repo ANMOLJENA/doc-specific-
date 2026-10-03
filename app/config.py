@@ -19,3 +19,8 @@ AI_MODEL = os.getenv("AI_MODEL", "")
 AI_API_KEY = os.getenv("AI_API_KEY", "")
 AI_TIMEOUT_SECONDS = int(os.getenv("AI_TIMEOUT_SECONDS", "180"))
 PREVIEW_MODE = os.getenv("PREVIEW_MODE", "0") == "1"
+# Local Qwen3-8B (llama.cpp server, `qwen` service in docker-compose): reads every PDF alongside the regex pass.
+LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://qwen:8080/v1").rstrip("/")
+LLM_MODEL = os.getenv("LLM_MODEL", "qwen3-8b")
+LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", "300"))
+LLM_MAX_CHARS = max(2000, int(os.getenv("LLM_MAX_CHARS", "12000")))

@@ -1,6 +1,8 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import pymupdf
 
@@ -8,6 +10,14 @@ from app.services.pdf_extraction import extract_pdf, resolve_fields
 
 
 class PdfExtractionTests(unittest.TestCase):
+    def setUp(self):
+        # These tests cover the regex pass only: the LLM is replaced by one that finds nothing, so no
+        # model server is needed. The regex-plus-LLM behaviour is tested in test_llm_extraction.py.
+        silent = lambda messages, schema: json.dumps({key: None for key in schema["properties"]})
+        patcher = mock.patch("app.services.pdf_extraction.get_llm", return_value=silent)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def make_pdf(self, text: str) -> Path:
         document = pymupdf.open()
         page = document.new_page()

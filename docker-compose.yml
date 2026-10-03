@@ -39,6 +39,8 @@ services:
         condition: service_started
       surya:
         condition: service_healthy
+      qwen:
+        condition: service_healthy
 
   paddle-worker:
     build:
@@ -90,6 +92,37 @@ services:
       retries: 60
       start_period: 30s
 
+  # Local Qwen3-8B that reads every PDF next to the regex extractor (app/services/llm_extraction.py).
+  # First start downloads ~5 GB into qwen_model_cache; expect ~6 GB RAM while it runs.
+  qwen:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    command:
+      - --hf-repo
+      - Qwen/Qwen3-8B-GGUF:Q4_K_M
+      - --alias
+      - qwen3-8b
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --parallel
+      - "1"
+      - --ctx-size
+      - "8192"
+      - --n-gpu-layers
+      - "0"
+      - --jinja
+    ports:
+      - "127.0.0.1:8002:8080"
+    volumes:
+      - qwen_model_cache:/root/.cache
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 120
+      start_period: 30s
+
   db:
     image: postgres:16-alpine
     environment:
@@ -111,3 +144,4 @@ volumes:
   postgres_data:
   originals:
   surya_model_cache:
+  qwen_model_cache:

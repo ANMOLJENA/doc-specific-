@@ -19,6 +19,8 @@ from pathlib import Path
 
 from rapidfuzz import fuzz, process as fuzzy_process
 
+from app.services.llm_extraction import LLM, LLMError, ask_llm, document_text, get_llm
+
 try:
     import pymupdf as fitz
 except ImportError:
@@ -626,7 +628,7 @@ STRATEGIES = [("inline", s_inline), ("inline_flat", s_inline_flat),
               ("total_row", s_total_row), ("column", s_column), ("next_line", s_next_line),
               ("column_order", s_column_order)]
 CONF = dict(inline=0.95, inline_flat=0.85, inline_pdf_order=0.85, table=0.90, total_row=0.85,
-            column=0.85, next_line=0.85, column_order=0.60, range=0.80, letter_date=0.60)
+            column=0.85, next_line=0.85, column_order=0.60, range=0.80, letter_date=0.60, llm=0.50)
 
 
 def _try_labels(ctx, doc, fd, labels, fallback=False):
@@ -687,6 +689,66 @@ def extract_field(ctx, doc, fd):
     return win
 
 
+def llm_fill(ctx, doc, fields, llm: LLM) -> dict:
+    """Ask the local LLM for `fields`. -> {field name: hit}. Raises LLMError if it is unreachable.
+
+    The model may only copy text: an answer is accepted when it is printed in the PDF and, for
+    typed fields, passes the same validation as a regex hit. Anything else is dropped."""
+    text = document_text(doc.pages)
+    fields = [dict(fd, key=fd.get("key") or _key(fd["name"])) for fd in fields]  # helper fields have no key
+    hits = {}
+    for key, raw in ask_llm(llm, text, fields).items():
+        fd = next(f for f in fields if f["key"] == key)
+        m = re.search(r"\s+".join(map(re.escape, raw.split())), text, re.I) if raw else None
+        if not m:
+            continue  # not in the document: the model made it up
+        if fd["type"] == "text":
+            raw, value = m.group(0), m.group(0)[:200]
+        else:
+            parsed = interpret(ctx, fd, m.group(0))
+            if not parsed:
+                continue
+            raw, value = parsed
+        hit = dict(value=value, raw=raw, label="local LLM", strategy="llm", page=0,
+                   snippet=_snip(text, m.start(), m.end()), confidence=CONF["llm"], alternatives=[],
+                   note="read by the local LLM; the value is printed in the PDF, but verify it")
+        if fd["type"] == "amount":
+            hit["num"] = parse_amount(raw)
+        hits[fd["name"]] = hit
+    return hits
+
+
+def _same(fd, a, b) -> bool:
+    if fd["type"] != "text":
+        return a == b
+    na, nb = (re.sub(r"\W+", " ", str(v)).strip().casefold() for v in (a, b))
+    return na == nb or na in nb or nb in na  # the model may include a few more or fewer words
+
+
+def reconcile(defs, details, llm_hits, warnings):
+    """Combine the regex result (`details`) with the LLM's answers, field by field.
+
+    both agree -> regex hit kept, confidence raised; regex found nothing -> LLM value used and
+    flagged; they differ -> regex value kept, LLM value becomes an alternative (so the amounts
+    check can still pick it when the arithmetic proves it) and the disagreement is flagged."""
+    requested = {fd["name"]: fd for fd in defs}
+    for name, hit in llm_hits.items():
+        reg, fd = details.get(name), requested.get(name)
+        key = fd["key"] if fd else _key(name)
+        if reg is None:
+            details[name] = hit
+            if fd:
+                warnings.append(f"{key}: not found by regex, filled by the local LLM: please verify")
+        elif _same(fd or dict(type=guess_type(_key(name))), reg["value"], hit["value"]):
+            reg["confidence"] = max(reg["confidence"], 0.98)
+            reg["confirmed_by_llm"] = True
+        else:
+            reg["alternatives"].append(hit)
+            if fd:
+                warnings.append(f"{key}: regex and local LLM disagree (regex {reg['value']!r}, LLM "
+                                f"{hit['value']!r}); using regex: please verify")
+
+
 def check_amounts(details):
     """The 'brain': bill - non-pay - deductions (copay, TDS, discount) must equal the amount paid.
     Tries the winners first, then alternatives, then subsets of the deductions."""
@@ -717,8 +779,12 @@ def check_amounts(details):
 # ----------------------------------------------------------------------------
 # Public entry point
 # ----------------------------------------------------------------------------
-def extract_pdf(path, requested_fields, ocr_reader=None, progress=None) -> dict:
+def extract_pdf(path, requested_fields, ocr_reader=None, progress=None, llm: LLM | None = None) -> dict:
     """Extract `requested_fields` (field keys such as "claim_number") from one PDF.
+
+    The regex pass and the local LLM (Qwen3-8B via `LLM_BASE_URL`, or the `llm` callable passed in)
+    both read the PDF and are reconciled field by field: disagreements and LLM-only values are
+    flagged in `warnings`, and an unreachable LLM is reported there too.
 
     Returns the job-result dict used by the API/UI: `output` is the CSV/JSON row keyed by the
     column names, `data`/`evidence`/`confidence` are keyed by field key."""
@@ -754,6 +820,10 @@ def extract_pdf(path, requested_fields, ocr_reader=None, progress=None) -> dict:
         warnings.append("very little text: probably a scanned PDF (needs OCR, not this script)")
     for fd in ctx.fields:
         details[fd["name"]] = extract_field(ctx, doc, fd)
+    try:  # the local LLM reads every PDF too; its answers are reconciled with the regex ones
+        reconcile(defs, details, llm_fill(ctx, doc, ctx.fields, llm or get_llm()), warnings)
+    except LLMError as error:
+        warnings.append(f"{error}: result is regex-only and was NOT cross-checked by the LLM")
     for fd in defs:
         res = details[fd["name"]]
         output[fd["name"]] = res["value"] if res else None
