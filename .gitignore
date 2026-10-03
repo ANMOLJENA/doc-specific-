@@ -1,0 +1,24 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+data/
+*.db
+.env
+work/
+frontend/node_modules/
+models/
+ce2ca0f38002e2f6e4392e8173cd2551.jpg
+img1.jpeg
+
+.venv/
+outputs/
+generated-test-images/
+# loose sample scans in the project root (may contain personal data)
+/*.jpg
+/*.jpeg
+/*.png
+/*.webp
+.claude/
+bundle smp/
+new forntend outlet/
+*.pdf

@@ -1,0 +1,9 @@
+frontend/node_modules
+work
+outputs
+__pycache__
+*.pyc
+.env
+models
+ce2ca0f38002e2f6e4392e8173cd2551.jpg
+img1.jpeg

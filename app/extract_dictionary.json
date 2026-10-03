@@ -1,0 +1,182 @@
+{
+  "policy_number": {
+    "display_name": "Policy number",
+    "labels": [
+      "Policy No",
+      "Policy Number",
+      "Policy #"
+    ],
+    "type": "id"
+  },
+  "claim_reference": {
+    "display_name": "Claim reference",
+    "labels": [
+      "Claim Reference",
+      "Claim No",
+      "Claim Number"
+    ],
+    "type": "id"
+  },
+  "claim_number": {
+    "display_name": "Claim number",
+    "labels": [
+      "Claim Number",
+      "Claim No",
+      "Claim Reference"
+    ],
+    "type": "id"
+  },
+  "claim_date": {
+    "display_name": "Claim date",
+    "labels": [
+      "Claim Date",
+      "Date of Claim",
+      "Intimation Date"
+    ],
+    "type": "date"
+  },
+  "admission_date": {
+    "display_name": "Admission date",
+    "labels": [
+      "Date of Admission",
+      "Admission Date",
+      "DOA"
+    ],
+    "type": "date"
+  },
+  "discharge_date": {
+    "display_name": "Discharge date",
+    "labels": [
+      "Date of Discharge",
+      "Discharge Date",
+      "DOD"
+    ],
+    "type": "date"
+  },
+  "insured_name": {
+    "display_name": "Insured name",
+    "labels": [
+      "Insured",
+      "Name of Insured",
+      "Insured Name"
+    ],
+    "type": "text"
+  },
+  "settlement_amount": {
+    "display_name": "Settlement amount",
+    "labels": [
+      "Settlement Amount",
+      "Net Payable",
+      "Final Settlement",
+      "Approved Settlement Amount"
+    ],
+    "type": "amount"
+  },
+  "settled_amount": {
+    "display_name": "Settled amount",
+    "labels": [
+      "Paid Amount",
+      "Settled Amount",
+      "Net Payable",
+      "Approved Amount"
+    ],
+    "type": "amount"
+  },
+  "not_settled_amount": {
+    "display_name": "Not settled amount",
+    "labels": [
+      "Disallowed Amount",
+      "Not Settled Amount",
+      "Deduction Amount",
+      "Non Payable Amount"
+    ],
+    "type": "amount"
+  },
+  "settlement_date": {
+    "display_name": "Settlement date",
+    "labels": [
+      "Settlement Date",
+      "Approval Date",
+      "Date of Settlement"
+    ],
+    "type": "date"
+  },
+  "final_diagnosis": {
+    "display_name": "Final Diagnosis",
+    "labels": [
+      "Final Diagnosis",
+      "Diagnosis"
+    ],
+    "type": "text"
+  },
+  "claimed_amount": {
+    "display_name": "Claimed amount",
+    "labels": [
+      "Amount Claimed",
+      "Claimed Amount"
+    ],
+    "type": "amount"
+  },
+  "final_bill": {
+    "display_name": "Final Bill",
+    "labels": [
+      "Final Bill",
+      "Total Bill Amount",
+      "Bill Amount"
+    ],
+    "type": "amount"
+  },
+  "invoice_number": {
+    "display_name": "Invoice number",
+    "labels": [
+      "Invoice No",
+      "Invoice Number",
+      "Bill No"
+    ],
+    "type": "id"
+  },
+  "invoice_date": {
+    "display_name": "Invoice date",
+    "labels": [
+      "Invoice Date",
+      "Bill Date",
+      "Date"
+    ],
+    "type": "date"
+  },
+  "vendor_name": {
+    "display_name": "Vendor name",
+    "labels": [
+      "Vendor",
+      "Supplier",
+      "Billed By"
+    ],
+    "type": "text"
+  },
+  "total_amount": {
+    "display_name": "Total amount",
+    "labels": [
+      "Total Amount",
+      "Grand Total",
+      "Amount Due"
+    ],
+    "type": "amount"
+  },
+  "phone": {
+    "display_name": "Phone",
+    "labels": [
+      "Phone",
+      "Mobile",
+      "Contact Number"
+    ],
+    "type": "phone"
+  },
+  "email": {
+    "display_name": "Email",
+    "labels": [
+      "Email",
+      "Email Address"
+    ],
+    "type": "email"
+  }
+}

@@ -1,0 +1,113 @@
+services:
+  api:
+    build:
+      context: .
+      target: api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    env_file: .env
+    volumes:
+      - .:/app
+      - originals:/data/originals
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    build:
+      context: .
+      target: worker
+    command: python -m app.worker
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      HF_HOME: /models/huggingface
+      MODEL_CACHE_DIR: /models/datalab
+    volumes:
+      - .:/app
+      - originals:/data/originals
+      - ./models:/models
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      paddle-worker:
+        condition: service_started
+      surya:
+        condition: service_healthy
+
+  paddle-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.paddle
+    command: python -m app.paddle_worker
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PADDLE_PDX_CACHE_HOME: /models/paddlex
+      HF_HOME: /models/huggingface
+    volumes:
+      - ./app:/app/app:ro
+      - originals:/data/originals
+      - ./models:/models
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    mem_limit: 2g
+
+  surya:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    command:
+      - --hf-repo
+      - datalab-to/surya-ocr-2-gguf
+      - --alias
+      - datalab-to/surya-ocr-2
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --parallel
+      - "1"
+      - --ctx-size
+      - "16384"
+      - --n-gpu-layers
+      - "0"
+      - --jinja
+    ports:
+      - "127.0.0.1:8001:8080"
+    volumes:
+      - surya_model_cache:/root/.cache
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: dococr
+      POSTGRES_USER: dococr
+      POSTGRES_PASSWORD: dococr
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dococr -d dococr"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+
+volumes:
+  postgres_data:
+  originals:
+  surya_model_cache:

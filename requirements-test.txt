@@ -1,0 +1,2 @@
+# Install alongside the worker dependencies to run API TestClient tests.
+httpx==0.28.1

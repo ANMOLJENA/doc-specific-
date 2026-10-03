@@ -1,0 +1,7 @@
+SAMPLE PRESCRIPTION
+Patient: Example Person
+Date: 25 September 2026
+Medicine: Example Tablet 500 mg
+Dosage: 0-1-1 for 5 days
+Instructions: Take after food
+Follow-up: Review after 7 days
